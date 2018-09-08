@@ -31,8 +31,8 @@ class User:
     def quit(self, message=""):
         self.api.quit(self, message)
     def __repr__(self):
-        string = "({}{}!{}@{}:{})".format("<{}> ".format(self.link_id) \
-            if self.link_id else "", self.nick, self.user, self.host, self.real)
+        string = "({}!{}@{}:{}{}{})".format(self.nick, self.user, self.host, self.real, \
+            "||alien<{}>".format(self.alien) if self.alien else "", "||link_id<{}>".format(self.link_id) if self.link_id else "")
         return string
 class Message:
     def __init__(self, user, message):
@@ -67,6 +67,12 @@ class API:
         self._users = []
         self._channels = []
         self._slots = {}
+    def get_user(self, alien):
+        print(self._users)
+        for user in self._users:
+            if user.alien == alien:
+                return user
+        raise KeyError
     def connect(self, host, port):
         """Connects to BridgeServ and sends initial requests along."""
         self.s.connect((host, port))
@@ -122,6 +128,8 @@ class API:
         data["hostname"] = host
         data["realname"] = real
         data["response_id"] = response_id
+        print("Going to create a user: {}!{}@{}:{} response:{}".format(nick, user, host, real, response_id))
+        print("Storing an alien: {} type: {}".format(alien, type(alien)))
         self._slots[response_id] = alien
         self.send_command(data)
     def update(self):
@@ -169,6 +177,7 @@ class API:
                 alien = self._slots[response_id]
                 del self._slots[response_id]
                 user = User(self, event.nick, event.username, event.hostname, event.realname, event.link_id, alien)
+                print("User created: {}".format(user))
                 self._users.append(user)
             if event.command == "get_users":
                 #must be run before get_channels
